@@ -122,12 +122,7 @@ impl LightingMode {
     }
 
     pub fn from_index(idx: u8) -> Option<Self> {
-        if idx <= 0x13 {
-            // Safety: all values 0x00..=0x13 are valid enum variants
-            Some(unsafe { std::mem::transmute(idx) })
-        } else {
-            None
-        }
+        Self::ALL.iter().copied().find(|m| *m as u8 == idx)
     }
 
     /// Which directions this mode supports, if any.
@@ -186,7 +181,7 @@ pub const MAX_BRIGHTNESS: u8 = 5;
 pub const MAX_SPEED: u8 = 5;
 
 /// Build the 64-byte mode data packet.
-/// Note: byte 0 is the mode value itself, which hidapi sends as the report ID.
+/// Note: byte 0 is the mode value itself, which the USB transport sends as the report ID.
 pub fn mode_data_packet(
     mode: LightingMode,
     r: u8, g: u8, b: u8,

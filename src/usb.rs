@@ -179,7 +179,13 @@ impl UsbDevice {
     /// `rgb565_data` must be exactly LCD_DATA_SIZE bytes (32768).
     /// For repeated uploads (LCD loop), call `claim_data_interface()` first.
     pub fn upload_image(&mut self, rgb565_data: &[u8]) -> Result<()> {
-        assert_eq!(rgb565_data.len(), LCD_DATA_SIZE, "Image must be {} bytes", LCD_DATA_SIZE);
+        if rgb565_data.len() != LCD_DATA_SIZE {
+            anyhow::bail!(
+                "Image must be {} bytes (got {})",
+                LCD_DATA_SIZE,
+                rgb565_data.len()
+            );
+        }
 
         // Claim interface 2 if not already held
         let need_release = !self.data_iface_claimed;
