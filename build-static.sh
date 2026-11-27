@@ -14,7 +14,7 @@
 #
 # Neither binary needs libusb or libudev at link or runtime: `rusb`'s `vendored`
 # feature compiles libusb from source into .o files, and we archive them into the
-# libusb-1.0.a that hidapi's build script asks the linker for. The CLI has no
+# libusb-1.0.a that rusb's vendored libusb build asks the linker for. The CLI has no
 # shared-library dependencies at all (no glibc, no libX*, no GL).
 #
 # WHY THE GUI IS NOT FULLY STATIC (and cannot be):

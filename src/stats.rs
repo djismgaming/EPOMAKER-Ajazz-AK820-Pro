@@ -8,8 +8,12 @@ pub struct SystemStats {
     /// Path to the coretemp hwmon temp input file (e.g., /sys/class/hwmon/hwmonN/temp1_input)
     cpu_temp_path: Option<PathBuf>,
     gpu_temp_method: GpuTempMethod,
+    /// Cached nvidia-smi result and when it was read (nvidia-smi spawns a process;
+    /// avoid calling it on every refresh).
+    nvidia_smi_cache: (Option<f32>, std::time::Instant),
 }
 
+#[derive(Clone)]
 enum GpuTempMethod {
     NvidiaSmi,
     Hwmon(PathBuf),
@@ -34,7 +38,12 @@ impl SystemStats {
         let cpu_temp_path = find_coretemp_path();
         let gpu_temp_method = find_gpu_temp_method();
 
-        Self { sys, cpu_temp_path, gpu_temp_method }
+        Self {
+            sys,
+            cpu_temp_path,
+            gpu_temp_method,
+            nvidia_smi_cache: (None, std::time::Instant::now() - std::time::Duration::from_secs(60)),
+        }
     }
 
     pub fn refresh(&mut self) -> Stats {
@@ -57,9 +66,15 @@ impl SystemStats {
                 .map(|millideg| millideg / 1000.0)
         });
 
-        let gpu_temp_c = match &self.gpu_temp_method {
-            GpuTempMethod::NvidiaSmi => read_nvidia_smi_temp(),
-            GpuTempMethod::Hwmon(path) => std::fs::read_to_string(path)
+        let gpu_temp_c = match self.gpu_temp_method.clone() {
+            GpuTempMethod::NvidiaSmi => {
+                // Only shell out to nvidia-smi once per second; temps don't move faster than that.
+                if self.nvidia_smi_cache.1.elapsed() >= std::time::Duration::from_secs(1) {
+                    self.nvidia_smi_cache = (read_nvidia_smi_temp(), std::time::Instant::now());
+                }
+                self.nvidia_smi_cache.0
+            }
+            GpuTempMethod::Hwmon(ref path) => std::fs::read_to_string(path)
                 .ok()
                 .and_then(|s| s.trim().parse::<f32>().ok())
                 .map(|millideg| millideg / 1000.0),

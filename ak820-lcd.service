@@ -4,9 +4,14 @@ After=multi-user.target
 
 [Service]
 Type=simple
-ExecStart=/home/gohv/ak820-ctl/target/release/ak820_ctl lcd --interval 5 --max-interval 60
+# Adjust the path to where ak820-ctl is installed (e.g. /usr/local/bin or
+# target/release/, or use `cargo install --path .`).
+ExecStart=/usr/local/bin/ak820-ctl lcd --interval 5 --max-interval 60
 Restart=on-failure
 RestartSec=10
+# Runs as the invoking user; grant it access via the udev rules, or grant it
+# the plugdev group. Add User=/Group= and sandboxing directives here if you
+# want to run it as a dedicated service account.
 
 [Install]
 WantedBy=multi-user.target
